@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-import {MongoClient, ObjectId, Db} from 'mongodb';
+import {MongoClient, ObjectId, Db, Collection} from 'mongodb';
 
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
@@ -99,18 +99,65 @@ async function connectToMongoDB(){
   }
 }
 
+async function hashPassword(password: string){
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(password, salt);
+  console.log('hashed password', hash);
+  return hash;
+}
+
+// async function checkEmailExist(email:string){
+//   let collection; let data;
+//   collection = db?.collection('admins');
+//   data = await collection?.findOne({email: email});
+//   if (data) { return {success:true, isAdmin: true}; }
+//   collection = db?.collection('users');
+//   data = await collection?.findOne({email:email});
+//   if (data) {return {success:true, isAdmin: false}};
+//   return false;
+// }
+
 
 // IPC HANDLER ------------------------------------------------------------------------
-ipcMain.on('save-task', (_, task: string) => {
-  console.log("Saving task...");
-});
-
-ipcMain.on('access-database', (_, email: string, password: string) =>{
-  console.log(`Received email: ${email} and password: ${password}`);
-});
-
 import {User} from '../types/user.ts'
 import {Admin} from '../types/admin.ts'
+
+
+ipcMain.handle('verify-account', async (_, email: string, password: string) =>{
+  console.log(`Received email: ${email} and password: ${password}`);
+  try{
+    if (!db){
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        console.log('Cannot connect to MongoDB in ipcMain:verify-account, main.ts');
+        return {success: false};
+      };
+    }
+
+    // checkEmailExist(email);
+    let collection; let matchedAccount;
+    collection = db?.collection('admins');
+    matchedAccount = await collection?.findOne({email: email});
+    if(matchedAccount && await bcrypt.compare(password, matchedAccount.password)){
+      console.log(`email: ${email} matched! in admin`)
+      return {isVerified: true, isAdmin: true}
+    }
+
+    collection = db?.collection('users');
+    matchedAccount = await collection?.findOne({email: email});
+    if(matchedAccount && await bcrypt.compare(password, matchedAccount.password)){
+      console.log(`email: ${email} matched! in users`);
+      return {isVerified: true, isAdmin: false}
+    }
+
+    return {isVerified: false, isAdmin: false}
+  } catch (error: any){
+    console.error('Error verifying:', error);
+    return {isVerified: false, isAdmin: false}
+  }
+});
+
+
 
 ipcMain.handle('add-user', async (_, user: User) =>{
   console.log(`Adding new user, email: ${user.email}, password: ${user.password}`);
@@ -125,6 +172,7 @@ ipcMain.handle('add-user', async (_, user: User) =>{
     }
 
     const collection = db?.collection('users');
+    user.password = await hashPassword(user.password);
     await collection?.insertOne(user);
     console.log("Successfully added a new user");
     return {success: true};
@@ -147,12 +195,65 @@ ipcMain.handle('add-admin', async(_, admin: Admin) =>{
     }
 
     const collection = db?.collection('admins');
+    admin.password = await hashPassword(admin.password);
     await collection?.insertOne(admin);
     console.log("Successfully added a new admin");
     return {success: true};
   } catch (error: any){
     console.error('Error adding admin:', error);
     return {success: false};
+  }
+})
+
+ipcMain.handle('get-user', async(_, user: User = {email: '', password: ''}) =>{
+  try{
+    if (!db){
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        console.log('Cannot connect to MongoDB in ipcMain:get-user, main.ts');
+        return [];
+      };
+    }
+
+    if (user.email === ''){
+      const collection = db?.collection('users');
+      const data = await collection?.find({}).toArray();
+      console.log('Value is not inserted, showing all user');
+      return data;
+    }
+    
+    const collection = db?.collection('users');
+    const data = await collection?.find({email: user.email}).toArray();
+    return data;
+  } catch(error){
+    console.error('Error getting user:', error);
+    return [];
+  }
+})
+
+ipcMain.handle('get-admin', async(_, admin: Admin = {email: '', password: ''}) =>{
+  try{
+    if (!db){
+      const connected = await connectToMongoDB();
+      if (!connected) {
+        console.log('Cannot connect to MongoDB in ipcMain:get-admin, main.ts');
+        return [];
+      };
+    }
+
+    if (admin.email === ''){
+      const collection = db?.collection('admins');
+      const data = await collection?.find({}).toArray();
+      console.log('Value is not inserted, showing all admin');
+      return data;
+    }
+    
+    const collection = db?.collection('admins');
+    const data = await collection?.find({email: admin.email}).toArray();
+    return data;
+  } catch(error){
+    console.error('Error getting admin:', error);
+    return [];
   }
 })
 

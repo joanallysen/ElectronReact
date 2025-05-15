@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/electron-vite.animate.svg'
 import './App.css'
@@ -9,10 +9,11 @@ import {Admin} from '../types/admin'
 declare global {
   interface Window {
     electronAPI: {
-      saveTask: (task: string) => void;
-      accessDatabase: (email: string, password: string) => void;
+      verifyAccount: (email: string, password: string) => {isVerified: boolean, isAdmin: boolean};
       addUser: (user: User) => void;
       addAdmin: (admin: Admin) => void;
+      getUser: (user?: User) => User[]; // no argument gonna show all user
+      getAdmin: (admin?: Admin) => Admin[]; // no argument gonna show all user
     };
   }
 }
@@ -45,7 +46,7 @@ function Debugform({isAdmin}: {isAdmin: boolean}){
   }
 
   return(
-    <div>
+    <div style={{display: 'flex', justifyContent: 'center', textAlign: 'center', flexDirection: 'row', gap: '2rem'}}>
         <input
           type="text"
           value={email}
@@ -66,55 +67,99 @@ function Debugform({isAdmin}: {isAdmin: boolean}){
   )
 }
 
-function App() {
+function LoginForm(){
   const [email, setEmail] = useState('');
   const [password, setPassword]= useState('');
+  const [status, setStatus] = useState({success: false, attempted: false});
 
-
-  // const addTask = () => {
-  //   if (input.trim() === '') return;
-  //   setTasks([...tasks, input.trim()]);
-  //   window.electronAPI.saveTask(input.trim());
-  //   setInput('');
-  // };
-
-  // const deleteTask = (index: number) => {
-  //   setTasks(tasks.filter((_, i) => i !== index));
-  // };
-
-  const sendPasswordAndEmail = () => {
+  const handleVerifyAccount = async () => {
     if (email.trim() === '' || password.trim() === '') return;
-    window.electronAPI.accessDatabase(email.trim(), password.trim());
+    const isVerifiedAndAttempted = {success: (await window.electronAPI.verifyAccount(email.trim(), password.trim())).isVerified, attempted: true};
+    console.log(isVerifiedAndAttempted.success, isVerifiedAndAttempted.attempted);
+    setStatus(isVerifiedAndAttempted);
     setEmail('');
     setPassword('');
   }
 
   return (
     <div>
-      <h1>🗝️ Login Page</h1>
-      <div>
-        <input
-          type="text"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter email..."
-        />
-        <input 
-          type="text" 
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder='Enter password...'
-        />
+      <h1> Verifying Page 🗝️</h1>
+      <div style={{display: 'flex', justifyContent: 'center', textAlign: 'center', flexDirection: 'row', gap: '2rem'}}>
+          <input
+            type="text"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter email..."
+          />
+          <input 
+            type="text" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder='Enter password...'
+          />
 
-        <button onClick={sendPasswordAndEmail}>
-          Add
-        </button>
+          <button onClick={handleVerifyAccount}>
+            Log in
+          </button>
+
+        </div>
+        {status.attempted && (
+          status.success ? (
+            <h3>Account found and verified!</h3>
+          ) : (
+            <h3>Email or password is wrong!</h3>
+          )
+        )}
       </div>
+  );
+}
 
-      <h1>🗝️ Debug Section</h1>
+function App() {
+
+  const [users, setUsers] = useState<User[]>([]);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+
+  
+
+  const handleGetUser = async () => {
+    console.log("Getting users...");
+    const users = await window.electronAPI.getUser();
+    console.log('Received users in UI: ', users);
+    setUsers(users);
+  }
+
+  const handleGetAdmin = async () => {
+    console.log("Getting users...");
+    const admins = await window.electronAPI.getAdmin();
+    console.log('Received admins in UI: ', admins);
+    setAdmins(admins);
+  }
+
+  return (
+    <div>
+      <LoginForm></LoginForm>
+      <h1> Debug Section 🐛</h1>
       <Debugform isAdmin={true}></Debugform>
       <Debugform isAdmin={false}></Debugform>
+      
+      <div style={{display: 'flex', justifyContent: 'center', textAlign: 'center', flexDirection: 'row', gap: '2rem'}}>
+        <ul>
+          <h3>Users: </h3>
+          {users.map((user, index) =>{
+            return <li key={index}>{user.email} {user.password}</li>
+          })}
+          <button onClick={handleGetUser}>Refresh User</button>
+        </ul>
 
+        <ul>
+          <h3>Admins: </h3>
+          {admins.map((admin, index) =>{
+            return <li key={index}>{admin.email} {admin.password}</li>
+          })}
+          <button onClick={handleGetAdmin}>Refresh Admin</button>
+        </ul>
+      </div>
+      
 
       {/* <ul style={{ listStyle: 'none', padding: 0 }}>
         {tasks.map((task, index) => (
@@ -134,3 +179,14 @@ function App() {
 }
 
 export default App;
+
+  // const addTask = () => {
+  //   if (input.trim() === '') return;
+  //   setTasks([...tasks, input.trim()]);
+  //   window.electronAPI.saveTask(input.trim());
+  //   setInput('');
+  // };
+
+  // const deleteTask = (index: number) => {
+  //   setTasks(tasks.filter((_, i) => i !== index));
+  // };

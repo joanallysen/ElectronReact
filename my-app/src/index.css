@@ -65,29 +65,6 @@ input {
   border-radius: 8px;
 }
 
-.todo-item.completed {
-  opacity: 0.6;
-}
-
-.todo-item input[type="checkbox"] {
-  margin-right: 1rem;
-}
-
-.todo-item .todo-text {
-  flex-grow: 1;
-  text-align: left;
-}
-
-.todo-item.completed .todo-text {
-  text-decoration: line-through;
-}
-
-.todo-item .delete-btn {
-  background-color: #ff4d4d;
-  color: white;
-  margin-left: 1rem;
-}
-
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

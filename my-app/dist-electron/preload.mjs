@@ -24,13 +24,21 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   saveTask: (task) => electron.ipcRenderer.send("save-task", task),
   // You can expose other APTs you need here.
   // ...
-  accessDatabase: (email, password) => electron.ipcRenderer.send("access-database", email, password),
+  verifyAccount: (email, password) => electron.ipcRenderer.invoke("verify-account", email, password),
   addUser: (user) => {
     console.log("Add user reach the bridge");
-    electron.ipcRenderer.invoke("add-user", user);
+    return electron.ipcRenderer.invoke("add-user", user);
   },
   addAdmin: (admin) => {
     console.log("Add admin reach bridge");
-    electron.ipcRenderer.invoke("add-admin", admin);
+    return electron.ipcRenderer.invoke("add-admin", admin);
+  },
+  getUser: (user) => {
+    console.log("Get user reach bridge");
+    return electron.ipcRenderer.invoke("get-user", user);
+  },
+  getAdmin: (admin) => {
+    console.log("Get admin reach bridge");
+    return electron.ipcRenderer.invoke("get-admin", admin);
   }
 });

@@ -1,7 +1,7 @@
 import { ipcRenderer, contextBridge } from 'electron'
 
-import {User} from '../types/user'
-import {Admin} from '../types/admin'
+import {User} from '../src/types/user'
+import {Admin} from '../src/types/admin'
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('electronAPI', {
   // main tell UI to change
@@ -28,24 +28,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return ipcRenderer.invoke(channel, ...omit)
   },
 
-  saveTask: (task:string) => ipcRenderer.send('save-task', task),
   // You can expose other APTs you need here.
   // ...
+  chooseImage: () => ipcRenderer.invoke('choose-image'),
   verifyAccount: (email:string, password: string) => ipcRenderer.invoke('verify-account', email, password),
-  addUser:(user: User) => {
+  addUser:(email: string, password: string) => {
     console.log('Add user reach the bridge');
-    return ipcRenderer.invoke('add-user', user)
+    return ipcRenderer.invoke('add-user', email, password)
   },
-  addAdmin:(admin: Admin) => {
+  addAdmin:(email: string, password: string) => {
     console.log('Add admin reach bridge');
-    return ipcRenderer.invoke('add-admin', admin)
+    return ipcRenderer.invoke('add-admin', email, password)
   },
-  getUser: (user: User) => {
+  getUser: (email: string) => {
     console.log('Get user reach bridge');
-    return ipcRenderer.invoke('get-user', user);
+    return ipcRenderer.invoke('get-user', email);
   },
-  getAdmin: (admin: Admin) => {
+  getAdmin: (email: string) => {
     console.log('Get admin reach bridge');
-    return ipcRenderer.invoke('get-admin', admin);
+    return ipcRenderer.invoke('get-admin', email);
+  },
+  addItem: (name:string, description: string, price: number, img: {mime: string, data: Buffer}, category:string, available: boolean, popularity: number) => {
+    console.log('Add item reach bridge');
+    return ipcRenderer.invoke('add-item', name, description, price, img, category, available, popularity);
   }
 })

@@ -1,10 +1,10 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import require$$0 from "fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path$1 from "node:path";
 import { MongoClient } from "mongodb";
 import nodeCrypto from "crypto";
-import require$$0 from "fs";
 import require$$1 from "path";
 import require$$2 from "os";
 var randomFallback = null;
@@ -2060,21 +2060,42 @@ async function hashPassword(password) {
   console.log("hashed password", hash2);
   return hash2;
 }
+async function checkConnection() {
+  if (!db) {
+    const connected = await connectToMongoDB();
+    if (!connected) {
+      console.log("Cannot connect to MongoDB in ipcMain:add-user, main.ts");
+    }
+  }
+}
+function getMimeType(filePath) {
+  if (filePath.endsWith(".png")) return "image/png";
+  if (filePath.endsWith(".jpg") || filePath.endsWith("jpeg")) return "image/jpeg";
+  return "application/octet-stream";
+}
+ipcMain.handle("choose-image", async () => {
+  const result = await dialog.showOpenDialog({
+    title: "Select Image",
+    properties: ["openFile"],
+    filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg"] }]
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  const filePath = result.filePaths[0];
+  const data = require$$0.readFileSync(filePath);
+  const mime = getMimeType(filePath);
+  const base64 = data.toString("base64");
+  return { mime, data: base64 };
+});
 ipcMain.handle("verify-account", async (_, email, password) => {
   console.log(`Received email: ${email} and password: ${password}`);
   try {
-    if (!db) {
-      const connected = await connectToMongoDB();
-      if (!connected) {
-        console.log("Cannot connect to MongoDB in ipcMain:verify-account, main.ts");
-        return { success: false };
-      }
-      ;
-    }
+    await checkConnection();
     let collection;
     let matchedAccount;
     collection = db == null ? void 0 : db.collection("admins");
     matchedAccount = await (collection == null ? void 0 : collection.findOne({ email }));
+    console.log(password);
+    console.log(matchedAccount);
     if (matchedAccount && await bcrypt.compare(password, matchedAccount.password)) {
       console.log(`email: ${email} matched! in admin`);
       return { isVerified: true, isAdmin: true };
@@ -2091,19 +2112,16 @@ ipcMain.handle("verify-account", async (_, email, password) => {
     return { isVerified: false, isAdmin: false };
   }
 });
-ipcMain.handle("add-user", async (_, user) => {
-  console.log(`Adding new user, email: ${user.email}, password: ${user.password}`);
+ipcMain.handle("add-user", async (_, email, password) => {
+  console.log(`Adding new user, email: ${email}, password: ${password}`);
   try {
-    if (!db) {
-      const connected = await connectToMongoDB();
-      if (!connected) {
-        console.log("Cannot connect to MongoDB in ipcMain:add-user, main.ts");
-        return { success: false };
-      }
-      ;
-    }
+    await checkConnection();
     const collection = db == null ? void 0 : db.collection("users");
-    user.password = await hashPassword(user.password);
+    password = await hashPassword(password);
+    const user = {
+      email,
+      password
+    };
     await (collection == null ? void 0 : collection.insertOne(user));
     console.log("Successfully added a new user");
     return { success: true };
@@ -2112,19 +2130,16 @@ ipcMain.handle("add-user", async (_, user) => {
     return { success: false };
   }
 });
-ipcMain.handle("add-admin", async (_, admin) => {
-  console.log(`Adding new admin, email: ${admin.email}, password: ${admin.password}`);
+ipcMain.handle("add-admin", async (_, email, password) => {
+  console.log(`Adding new admin, email: ${email}, password: ${password}`);
   try {
-    if (!db) {
-      const connected = await connectToMongoDB();
-      if (!connected) {
-        console.log("Cannot connect to MongoDB in ipcMain:add-admin, main.ts");
-        return { success: false };
-      }
-      ;
-    }
+    await checkConnection();
     const collection = db == null ? void 0 : db.collection("admins");
-    admin.password = await hashPassword(admin.password);
+    password = await hashPassword(password);
+    const admin = {
+      email,
+      password
+    };
     await (collection == null ? void 0 : collection.insertOne(admin));
     console.log("Successfully added a new admin");
     return { success: true };
@@ -2133,54 +2148,74 @@ ipcMain.handle("add-admin", async (_, admin) => {
     return { success: false };
   }
 });
-ipcMain.handle("get-user", async (_, user = { email: "", password: "" }) => {
+ipcMain.handle("get-user", async (_, email) => {
   try {
-    if (!db) {
-      const connected = await connectToMongoDB();
-      if (!connected) {
-        console.log("Cannot connect to MongoDB in ipcMain:get-user, main.ts");
-        return [];
-      }
-      ;
-    }
-    if (user.email === "") {
+    await checkConnection();
+    if (email === "") {
       const collection2 = db == null ? void 0 : db.collection("users");
-      const data2 = await (collection2 == null ? void 0 : collection2.find({}).toArray());
+      const usersRaw = await (collection2 == null ? void 0 : collection2.find({}).toArray());
+      const users = usersRaw == null ? void 0 : usersRaw.map((user) => ({
+        ...user,
+        id: user._id.toHexString()
+      }));
       console.log("Value is not inserted, showing all user");
-      return data2;
+      return users;
     }
     const collection = db == null ? void 0 : db.collection("users");
-    const data = await (collection == null ? void 0 : collection.find({ email: user.email }).toArray());
+    const data = await (collection == null ? void 0 : collection.find({ email }).toArray());
     return data;
   } catch (error) {
     console.error("Error getting user:", error);
     return [];
   }
 });
-ipcMain.handle("get-admin", async (_, admin = { email: "", password: "" }) => {
+ipcMain.handle("get-admin", async (_, email) => {
   try {
-    if (!db) {
-      const connected = await connectToMongoDB();
-      if (!connected) {
-        console.log("Cannot connect to MongoDB in ipcMain:get-admin, main.ts");
-        return [];
-      }
-      ;
-    }
-    if (admin.email === "") {
+    await checkConnection();
+    if (email === "") {
       const collection2 = db == null ? void 0 : db.collection("admins");
-      const data2 = await (collection2 == null ? void 0 : collection2.find({}).toArray());
+      const adminsRaw = await (collection2 == null ? void 0 : collection2.find({}).toArray());
+      console.log(adminsRaw);
+      const admins = adminsRaw == null ? void 0 : adminsRaw.map((admin) => ({
+        ...admin,
+        id: admin._id.toHexString()
+      }));
       console.log("Value is not inserted, showing all admin");
-      return data2;
+      return admins;
     }
     const collection = db == null ? void 0 : db.collection("admins");
-    const data = await (collection == null ? void 0 : collection.find({ email: admin.email }).toArray());
+    const data = await (collection == null ? void 0 : collection.find({ email }).toArray());
     return data;
   } catch (error) {
     console.error("Error getting admin:", error);
     return [];
   }
 });
+ipcMain.handle(
+  "add-item",
+  async (_, name, description, price, img, category, available, popularity) => {
+    try {
+      await checkConnection();
+      const collection = db == null ? void 0 : db.collection("items");
+      const item = {
+        name,
+        description,
+        price,
+        img,
+        category,
+        available,
+        popularity,
+        modifiedAt: /* @__PURE__ */ new Date()
+      };
+      await (collection == null ? void 0 : collection.insertOne(item));
+      console.log("Successfully added the item.");
+      return { success: true };
+    } catch (error) {
+      console.error("Error adding item:", error);
+      return { success: false };
+    }
+  }
+);
 export {
   MAIN_DIST,
   RENDERER_DIST,

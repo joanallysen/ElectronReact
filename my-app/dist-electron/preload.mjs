@@ -21,24 +21,28 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
     const [channel, ...omit] = args;
     return electron.ipcRenderer.invoke(channel, ...omit);
   },
-  saveTask: (task) => electron.ipcRenderer.send("save-task", task),
   // You can expose other APTs you need here.
   // ...
+  chooseImage: () => electron.ipcRenderer.invoke("choose-image"),
   verifyAccount: (email, password) => electron.ipcRenderer.invoke("verify-account", email, password),
-  addUser: (user) => {
+  addUser: (email, password) => {
     console.log("Add user reach the bridge");
-    return electron.ipcRenderer.invoke("add-user", user);
+    return electron.ipcRenderer.invoke("add-user", email, password);
   },
-  addAdmin: (admin) => {
+  addAdmin: (email, password) => {
     console.log("Add admin reach bridge");
-    return electron.ipcRenderer.invoke("add-admin", admin);
+    return electron.ipcRenderer.invoke("add-admin", email, password);
   },
-  getUser: (user) => {
+  getUser: (email) => {
     console.log("Get user reach bridge");
-    return electron.ipcRenderer.invoke("get-user", user);
+    return electron.ipcRenderer.invoke("get-user", email);
   },
-  getAdmin: (admin) => {
+  getAdmin: (email) => {
     console.log("Get admin reach bridge");
-    return electron.ipcRenderer.invoke("get-admin", admin);
+    return electron.ipcRenderer.invoke("get-admin", email);
+  },
+  addItem: (name, description, price, img, category, available, popularity) => {
+    console.log("Add item reach bridge");
+    return electron.ipcRenderer.invoke("add-item", name, description, price, img, category, available, popularity);
   }
 });

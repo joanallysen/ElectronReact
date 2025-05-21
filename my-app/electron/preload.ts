@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     console.log('Get admin reach bridge');
     return ipcRenderer.invoke('get-admin', email);
   },
-  addItem: (name:string, description: string, price: number, img: {mime: string, data: Buffer}, category:string, available: boolean, popularity: number) => {
+  addItem: (name:string, description: string, price: number, img: {mime: string, data: string}, category:string, available: boolean, popularity: number) => {
     console.log('Add item reach bridge');
     return ipcRenderer.invoke('add-item', name, description, price, img, category, available, popularity);
   }

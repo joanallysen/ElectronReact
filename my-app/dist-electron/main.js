@@ -2201,21 +2201,33 @@ ipcMain.handle(
         name,
         description,
         price,
-        img,
+        img: { mime: img.mime, data: Buffer.from(img.data, "base64") },
         category,
         available,
         popularity,
         modifiedAt: /* @__PURE__ */ new Date()
       };
       await (collection == null ? void 0 : collection.insertOne(item));
-      console.log("Successfully added the item.");
+      console.log("Successfully added a new item.");
       return { success: true };
     } catch (error) {
       console.error("Error adding item:", error);
       return { success: false };
     }
   }
-);
+), ipcMain.handle("get-item", async (_, category = "", search = "") => {
+  try {
+    await checkConnection();
+    if (category !== "") {
+      const collection = db == null ? void 0 : db.collection("items");
+      const items = await (collection == null ? void 0 : collection.find({ category }));
+      return items;
+    }
+  } catch (error) {
+    console.log("error at get item", error);
+    return [];
+  }
+});
 export {
   MAIN_DIST,
   RENDERER_DIST,

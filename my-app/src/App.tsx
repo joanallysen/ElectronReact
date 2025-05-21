@@ -5,6 +5,7 @@ import './App.css'
 
 import {User} from './types/user';
 import {Admin} from './types/admin';
+import {Item} from './types/item';
 
 declare global {
   interface Window {
@@ -15,8 +16,10 @@ declare global {
       getUser: (email:string) => User[]; // no argument gonna show all user
       getAdmin: (email:string) => Admin[]; // no argument gonna show all user
 
-      addItem: (name:string, description: string, price: number, img: {mime: string, data: Buffer}, category:string, available: boolean, popularity: number) => void;
-      chooseImage: () => {mime:string, data:Buffer};
+      addItem: (name:string, description: string, price: number, img: {mime: string, data: string}, category:string, available: boolean, popularity: number) => void;
+      chooseImage: () => {mime:string, data:string};
+
+      getItem: (category:string, search: string) => Item[];
     };
   }
 

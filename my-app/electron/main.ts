@@ -148,7 +148,6 @@ ipcMain.handle('choose-image', async() =>{
 
   const base64 = data.toString('base64');
   return {mime, data: base64};
-
 })
 
 // IPC HANDLER ------------------------------------------------------------------------
@@ -287,7 +286,7 @@ ipcMain.handle('get-admin', async(_, email: string) =>{
   }
 })
 
-ipcMain.handle('add-item', async(_, name:string, description: string, price: number, img: {mime: string, data: Buffer}, category:string, available: boolean, popularity: number) =>{
+ipcMain.handle('add-item', async(_, name:string, description: string, price: number, img: {mime: string, data: string}, category:string, available: boolean, popularity: number) =>{
   try{
     await checkConnection();
 
@@ -296,7 +295,7 @@ ipcMain.handle('add-item', async(_, name:string, description: string, price: num
       name: name,
       description: description,
       price: price,
-      img: img,
+      img: {mime:img.mime, data:Buffer.from(img.data, 'base64')},
       category: category,
       available: available,
       popularity: popularity,
@@ -304,7 +303,7 @@ ipcMain.handle('add-item', async(_, name:string, description: string, price: num
     }
 
     await collection?.insertOne(item);
-    console.log("Successfully added the item.");
+    console.log("Successfully added a new item.");
     return {success: true};
   }
     catch (error){
@@ -312,7 +311,22 @@ ipcMain.handle('add-item', async(_, name:string, description: string, price: num
     return {success: false};
   }
 } 
-)
+),
+
+ipcMain.handle('get-item', async(_, category:string = '', search:string = '') =>{
+  try{
+    await checkConnection();
+
+    if (category !== ''){
+      const collection = db?.collection('items');
+      const items = await collection?.find({category:category});
+      return items;
+    }
+  } catch (error){
+    console.log('error at get item', error);
+    return [];
+  }
+})
 
 
 // ipcMain.on('get-user', async (e) =>{

@@ -82,13 +82,13 @@ export default function LoginPage({onChangePage} : {onChangePage: (p:PageName) =
                 <Debugform isAdmin={true}></Debugform>
                 <Debugform isAdmin={false}></Debugform>
                 
-                <div style={{display: 'flex', justifyContent: 'center', textAlign: 'center', flexDirection: 'row', gap: '2rem'}}>
+                <div className='flex .m-0 justify-center text-center gap-4'>
                     <ul>
                     <h3>Users: </h3>
                     {users.map((user, index) =>{
                         return <li key={index}>{user.email} {user.password}</li>
                     })}
-                    <button onClick={handleGetUser}>Refresh User</button>
+                    <button onClick={handleGetUser} className='border-black p-2.5 border-1 rounded-2xl cursor-pointer'>Refresh User</button>
                     </ul>
 
                     <ul>
@@ -96,7 +96,7 @@ export default function LoginPage({onChangePage} : {onChangePage: (p:PageName) =
                     {admins.map((admin, index) =>{
                         return <li key={index}>{admin.email} {admin.password}</li>
                     })}
-                    <button onClick={handleGetAdmin}>Refresh Admin</button>
+                    <button onClick={handleGetAdmin} className='border-black p-2.5 border-1 rounded-2xl cursor-pointer'>Refresh Admin</button>
                     </ul>
                 </div>
             </div>

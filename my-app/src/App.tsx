@@ -1,7 +1,6 @@
 import { ReactNode, useState, useEffect, useContext, createContext } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/electron-vite.animate.svg'
-import './App.css'
 
 import {User} from './types/user';
 import {Admin} from './types/admin';
@@ -41,7 +40,7 @@ function App() {
   }
 
   return (
-    <div>
+    <div className='justify-center text-center flex-col'>
       {page == 'loginPage' && <LoginPage onChangePage={handleChangePage}/>}
       {page == 'adminPage' && <AdminPage onChangePage={handleChangePage} />}
       {page == 'userPage' && <UserPage onChangePage={handleChangePage} />}

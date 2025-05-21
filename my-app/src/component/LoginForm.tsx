@@ -30,25 +30,35 @@ export default function LoginForm({onChangePage} : {onChangePage: (p: PageName) 
 
 
   return (
-    <div>
-      <h1> Verifying Page 🗝️</h1>
-      <div style={{display: 'flex', justifyContent: 'center', textAlign: 'center', flexDirection: 'row', gap: '2rem'}}>
+    <div className="flex flex-col justify-center text-center gap-5.5 m-auto w-80">
+      <h1 className="text-black"> Login. </h1>
+      <div className="flex flex-col gap-1.5">
+        <div>
+          <p className="text-left">Email</p>
           <input
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter email..."
+            className="border-2 rounded-2xl p-2 w-full"
           />
+        </div>
+          
+        <div>
+          <p className="text-left">Password</p>
           <input 
             type="text" 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder='Enter password...'
+            className="border-2 rounded-2xl p-2 w-full"
           />
 
-          <button onClick={handleVerifyAccount}>
+          <button className="p-1.5 border-amber-950 .text-white" onClick={handleVerifyAccount}>
             Log in
           </button>
+        </div>
+          
 
         </div>
 

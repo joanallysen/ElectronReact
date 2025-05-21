@@ -20,7 +20,6 @@ export default function UserPage({onChangePage}:{onChangePage: (p: PageName) => 
         <h1>Current: User Page</h1>
         <button onClick={() => onChangePage('loginPage')}>Go to User Page</button>
         <div style={{'display':'grid'}}>
-            <div sty></div>
         </div>
         </>
     )
